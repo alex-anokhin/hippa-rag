@@ -9,8 +9,8 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -41,8 +41,8 @@ services:
       - ./backend/data:/app/data
     networks:
       - hipaa_network
-    ports:
-      - "8080:8080"
+    # ports:
+    #   - "8080:8080"
 
   frontend:
     build: ./frontend
@@ -56,8 +56,8 @@ services:
       - ./frontend:/app
     networks:
       - hipaa_network
-    ports:
-      - "7860:7860"
+    # ports:
+    #   - "7860:7860"
 
   nginx:
     build: ./nginx
