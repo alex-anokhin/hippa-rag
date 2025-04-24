@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  db:
+    build: ./db
+    container_name: hipaa_db
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - hipaa_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: hipaa_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./backend:/app
+      - ./backend/data:/app/data
+    networks:
+      - hipaa_network
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    container_name: hipaa_frontend
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      - BACKEND_URL=http://backend:8080
+    volumes:
+      - ./frontend:/app
+    networks:
+      - hipaa_network
+    ports:
+      - "7860:7860"
+
+  nginx:
+    build: ./nginx
+    container_name: hipaa_nginx
+    restart: always
+    ports:
+      - "12080:80"
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - hipaa_network
+
+networks:
+  hipaa_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
